@@ -17,7 +17,7 @@ RUN apt-get update \
         ca-certificates=20200601~deb10u2 \
         gnupg=2.2.12-1+deb10u2 \
         # gnupg=2.2.12-1+deb10u1 \
-        gnupg-agent=2.2.12-1+deb10u1 \
+        gnupg-agent=2.2.12-1+deb10u2 \
         software-properties-common=0.96.20.2-2 \
         git=1:2.20.1-2+deb10u3 \
         curl \
