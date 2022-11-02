@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-runner
+  namespace: runner
+  labels:
+    app: github-runner
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: github-runner
+  template:
+    metadata:
+      labels:
+        app: github-runner  
+    spec:
+      {{- if .Values.podAntiAffinity.enabled }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                      - key: release
+                        operator: In
+                        values:
+                          - github-runner
+                  topologyKey: kubernetes.io/hostname
+      {{- end }}    
+      containers:
+      - name: github-runner-sidecar
+        image: docker:19.03.12-dind
+        # This is needed to include the provided CA certificates in the trusted ones
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "update-ca-certificates"]
+        volumeMounts:
+          - name: docker-certs
+            mountPath: /certs
+          - name: docker-storage
+            mountPath: /var/lib/docker
+          - name: github-workdir
+            mountPath: /home/github/_work
+          # Mount additional CA certificates from the configmap volume
+          # - name: private-registry-certificate-volume
+          #   mountPath: /usr/local/share/ca-certificates
+        securityContext:
+          privileged: true
+        resources:
+          {{- toYaml .Values.sideCarResources | nindent 12 }}            
+      - name: github-runner
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        env:
+          - name: RUNNER_NAME_PREFIX
+            value: "itsmesunil-pool-"
+          - name: "RUNNER_LABELS"
+            value: "k8s,core-app"
+          - name: GITHUB_OWNER
+            value: itsmesunil
+          - name: GITHUB_PAT # stored separately in a Kubernetes secret
+            valueFrom:
+              secretKeyRef:
+                name: my-pat
+                key: pat
+          - name: DOCKER_TLS_CERTDIR
+            value: /certs
+          - name: DOCKER_HOST
+            value: tcp://localhost:2376
+          - name: DOCKER_TLS_VERIFY
+            value: "1"
+          - name: DOCKER_CERT_PATH
+            value: /certs/client        
+        volumeMounts:
+          - name: docker-certs
+            mountPath: /certs
+          - name: github-workdir
+            mountPath: /home/github/_work
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}             
+      volumes:
+      - name: docker-storage
+        emptyDir: {}
+      - name: docker-certs
+        emptyDir: {}
+      - name: github-workdir
+        emptyDir: {}
+      imagePullSecrets:
+      - name: gcr-json-key
+     
+      # Additional CA certificates from a configmap volume
+      # - name: private-registry-certificate-volume
+      #   configMap:
+      #     name: private-registry-certificate
+        
