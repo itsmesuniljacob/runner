@@ -1,0 +1,103 @@
+# Default values for common-facade.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+environment:
+  name: sandbox
+
+replicaCount: 1
+version: v1
+
+autoscaling:
+  enabled: false
+
+
+image:
+  repository: us.gcr.io/kubernetes-istio-gcp/k8s-runner
+  tag: $IMAGE_TAG
+  pullPolicy: IfNotPresent
+  pullSecret:
+    enabled: true
+    registry: us.gcr.io
+    username: username
+    password: password
+
+service:
+  type: ClusterIP
+  port: 80
+  canary:
+    name: beta
+    enabled: false
+
+containers:
+  port: 8080
+
+
+
+egress:
+  enabled: false
+  hosts:
+    - "*"
+
+pod:
+  initialDelaySeconds: 15
+
+resources:
+  limits:
+    memory: 4Gi
+  requests:
+    cpu: 100m
+    memory: 2Gi
+
+
+sideCarResources:
+  limits:
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 250Mi    
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+#  memory: 128Mi
+
+nodeSelector: { }
+
+tolerations: [ ]
+
+podAntiAffinity:
+  enabled: true
+
+gcp:
+  enabled: false
+
+database:
+  enabled: false
+
+destinationPolicy:
+  maxConnections: 6000
+  http1MaxPendingRequests: 1024
+  maxRequestsPerConnection: 10
+  consecutiveErrors: 7
+  interval: 1s
+  baseEjectionTime: 5m
+  maxEjectionPercent: 10
+
+
+jwt_policy:
+  enabled: false
+
+
+podAntiAffinity:
+  enabled: true
+
+securityContext:
+  enabled: true
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 1000  
